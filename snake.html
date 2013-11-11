@@ -22,9 +22,12 @@
 		.difficulty.selected {color:#F00; cursor: pointer;}
 		#snake_canvas{border:5px solid #000000; width:100%;margin:auto;}
 		#game-container{width:600px; height:400px; margin:auto;}
-		#play_again{cursor: pointer;}
+/*		#play_again{cursor: pointer;}
 		#start_game{cursor: pointer;}
-		#menu_button{cursor: pointer;}
+		#menu_button{cursor: pointer;}*/
+
+		.selectable{cursor: pointer;}
+		.selectable:hover{color:#00f;}
 		.score{ font-family: Vidya; font-size: 20px;}
 		#snake_title{margin-top: 140px; cursor: default;}
 		</style>
@@ -44,6 +47,7 @@
 		}
 		function Snake(_board)
 		{
+			var can_cange_dir = true;
 			var score = 0;
 			var board = _board;
 			var grow_count = 3;
@@ -88,6 +92,10 @@
 
 				body.push(head);
 
+				can_cange_dir=true;
+
+
+
 				
 			}
 
@@ -100,8 +108,11 @@
 
 			this.setV = function(_vx, _vy){
 				//snake cant turn into itself
-				vx=_vx!=-vx?_vx:vx;
-				vy=_vy!=-vy?_vy:vy;
+				if(can_cange_dir){
+					vx=_vx!=-vx?_vx:vx;
+					vy=_vy!=-vy?_vy:vy;
+					can_cange_dir = false;
+				}
 			}
 
 			this.update=function(){
@@ -269,12 +280,14 @@
 			});
 
 			$('#play_again').on("click",function(){
+				$("#score").text(0);
 				game.initialise();
 				game.startGame();
 				$("#game-over").hide();
 			});
 
 			$('#menu_button').on("click",function(){
+				$("#score").text(0);
 				$("#game-over").hide();
 				$("#game-menu").show();
 			});
@@ -306,18 +319,18 @@
 			<div id="count_down_1" class="count_down"><p>1</p></div>
 
 			<div id="game-menu" class="game_dialogue">
-				<div class="difficulty">Easy</div>
-				<div class="difficulty selected">Medium</div>
-				<div class="difficulty">Hard</div>
-				<div id="start_game">Play</div>
+				<div class="difficulty selectable">Easy</div>
+				<div class="difficulty selected selectable">Medium</div>
+				<div class="difficulty selectable">Hard</div>
+				<div id="start_game" class="selectable">Play</div>
 
 				<div id="snake_title">Snkae</div>
 			</div>
 			<div id="game-over" class="game_dialogue">
 				<p>Game Over!</p>
 				<p> Score:<span id="final_score"></span></p>
-				<div id="play_again"><span><p>Play Again</p></span></div>
-				<div id="menu_button"><span><p>Menu</p></span></div>
+				<div id="play_again" class="selectable"><span><p>Play Again</p></span></div>
+				<div id="menu_button" class="selectable"><span><p>Menu</p></span></div>
 			</div>
 
 			
