@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<title>snake</title>
+		<style type="text/css">
+		@font-face {
+		font-family: Lot;
+			src: url("LOT.otf") format("opentype");
+		}
+
+		@font-face {
+		font-family: Vidya;
+			src: url("VIDYA.TTF") format("truetype");
+		}
+
+		.count_img{	width:200px; height:auto; position: relative; left: 200px; top: -600px;}
+		.count_down{font-family: Vidya; font-size: 60px; position: relative; left: 275px; top: -600px; -ms-user-select: none; user-select: none; -moz-user-select: -moz-none; -khtml-user-select: none; -webkit-user-select: none;}
+		.game_dialogue{width:200px; height:auto; position: relative; left: 100px; top: -600px; background-color: #fff; color: #000; font-family: Vidya; font-size: 50px; -ms-user-select: none; user-select: none; -moz-user-select: -moz-none; -khtml-user-select: none; -webkit-user-select: none;}
+
+		.difficulty{font-size: 25px; cursor: pointer;}
+
+		.difficulty.selected {color:#F00; cursor: pointer;}
+		#snake_canvas{border:5px solid #000000; width:100%;margin:auto;}
+		#game-container{width:600px; height:400px; margin:auto;}
+		#play_again{cursor: pointer;}
+		#start_game{cursor: pointer;}
+		#menu_button{cursor: pointer;}
+		.score{ font-family: Vidya; font-size: 20px;}
+		#snake_title{margin-top: 140px; cursor: default;}
+		</style>
+		<script type="text/javascript" src="jquery-2.0.3.min.js"></script>
+		<script>
+
+		var canvas = document.getElementById("snake_canvas");
+		function Cell(_x, _y, _board)
+		{
+			var x = _x;
+			var y = _y;
+			var board = _board;
+			this.on = function(){board.drawCell(x,y,true)}
+			this.off = function(){board.drawCell(x,y,false)}
+			this.getX = function(){return x}
+			this.getY = function(){return y}
+		}
+		function Snake(_board)
+		{
+			var score = 0;
+			var board = _board;
+			var grow_count = 3;
+			var vx = 1;
+			var vy = 0;
+			var body = new Array();
+			var head = board.getCell(2,board.getHeight()/2 );
+			var nibble=board.getCell(Math.floor(Math.random()*board.getWidth()), Math.floor(Math.random()*board.getHeight()));
+			nibble.on();
+			body.push(head);
+
+			function addNibble()
+			{
+				//choose a random square in the map
+				nibble = board.getCell(Math.floor(Math.random()*board.getWidth()), Math.floor(Math.random()*board.getHeight()));
+				nibble.on();
+				while(body.indexOf(nibble)!=-1){
+					//if nibble is spawned inside snake
+					nibble = board.getCell(Math.floor(Math.random()*board.getWidth()), Math.floor(Math.random()*board.getHeight()));
+				}
+				nibble.on();
+				return nibble;
+			}
+
+			function move(){
+
+				if(grow_count>0){
+					grow_count--;
+				}else{
+					var tail = body.shift();
+					tail.off();
+				}
+
+				if(head.getX()+vx<board.getWidth() && head.getY()+vy<board.getHeight() && head.getX()+vx >=0 && head.getY()+vy>=0){
+					head = board.getCell(head.getX()+vx,head.getY()+vy);
+					head.on();
+					if(body.indexOf(head)!=-1){board.gameOver(score);return;}
+				}else{
+					board.gameOver(score);
+					return;
+				}
+
+				body.push(head);
+
+				
+			}
+
+			this.drawAll = function(){
+				body.forEach(function(cell){
+					cell.on();
+				});
+				nibble.on();
+			}
+
+			this.setV = function(_vx, _vy){
+				//snake cant turn into itself
+				vx=_vx!=-vx?_vx:vx;
+				vy=_vy!=-vy?_vy:vy;
+			}
+
+			this.update=function(){
+				move();
+
+				if(body.indexOf(nibble)!=-1){
+					addNibble();
+					grow_count+=2;
+					score++;
+					$("#score").text(score);
+				}
+			}
+		}
+
+		function Nibble(_x, _y){
+			this.x = _x;
+			this.y = _y;
+		}
+
+		function Board(_width, _height, _canvas)
+		{
+			var timeOutValue = 80;
+			var gameTimer;
+			var width = _width;
+			var height = _height;
+			var canvas = _canvas;
+			var snake;
+			var ctx = canvas.getContext("2d");
+			var cells = new Array();
+			//initialise cells
+			for(var i = 0; i < width; i++){
+				cells[i]=new Array();
+				for(var j = 0; j < height; j++){
+					cells[i][j] = new Cell(i,j,this);
+				}
+			}
+			this.getCell = function(x,y){
+				return cells[x][y];
+			}
+			this.drawCell = function(x,y,on){
+				if(on){
+					ctx.fillStyle="#000";
+				}else{ctx.fillStyle="#fff"}
+				ctx.fillRect(x*(canvas.width/width), y*(canvas.height/height),(canvas.width/width),(canvas.height/height));
+			}
+			function reDraw(){
+				ctx.fillStyle="#fff";
+				ctx.fillRect(0,0,canvas.width, canvas.height);
+
+				snake.drawAll();
+
+			}
+
+			this.getWidth = function(){return width}
+			this.getHeight = function(){return height}
+
+			this.addSnake = function(){
+				snake = new Snake(this);
+				snake.update();
+				snake.update();
+				snake.update();
+			}
+
+			update=function(){
+				snake.update();
+			}
+
+			function SetSnakeDir(vx, vy){
+				snake.setV(vx,vy);
+			}
+
+			this.gameOver = function(_score){
+				//stop game, show score, restart?
+
+				clearInterval(gameTimer);
+
+				ctx.fillStyle="rgba(256,256,256, 0.5)";
+				ctx.fillRect(0,0,canvas.width, canvas.height);
+				$("#final_score").text(_score);
+				$("#game-over").show();
+			}
+
+			this.startGame = function(){
+				$("#count_down_3").show();
+				window.setTimeout(function(){
+					$("#count_down_2").show();
+					$("#count_down_3").hide();
+				},1000);
+				window.setTimeout(function(){
+					$("#count_down_2").hide();
+					$("#count_down_1").show();
+
+				},2000);
+				
+
+				window.setTimeout(function(){
+					$("#count_down_1").hide();
+
+					gameTimer=setInterval(function(){
+					update();
+					},timeOutValue);
+				},3000);
+
+
+				
+
+			}
+
+			this.initialise = function(){
+				this.addSnake();
+				reDraw();
+				window.onkeydown = function (e) {
+				    var code = e.keyCode ? e.keyCode : e.which;
+				    if (code === 38) { //up key
+				        SetSnakeDir(0,-1);
+				    } else if (code === 40) { //down key
+				        SetSnakeDir(0,1);
+				    } else if (code === 39) { //right key
+				        SetSnakeDir(1,0);
+				        
+				    } else if (code === 37) { //left key
+				        SetSnakeDir(-1,0);
+				    }
+				};
+			}
+
+			this.reset = function(){
+				this.addSnake();
+				reDraw();
+			}
+
+			this.setDifficulty = function(_difficulty){
+				if(_difficulty.toLowerCase() == "medium"){
+					timeOutValue = 80;
+				}
+
+				if(_difficulty.toLowerCase() == "hard"){
+					timeOutValue = 50;
+				}
+
+				if(_difficulty.toLowerCase() == "easy"){
+					timeOutValue = 100;
+				}
+			}
+
+
+		}
+		var canvas;
+		var game;
+		
+		$(document).ready(function(){
+
+			canvas = document.getElementById("snake_canvas");
+			game = new Board(20,20,canvas);
+
+
+			$('.count_down').hide();
+			$('#game-over').hide();
+			
+			
+			$('#start_game').on("click", function(){
+				game.initialise();
+				game.startGame();
+				$("#game-menu").hide();
+			});
+
+			$('#play_again').on("click",function(){
+				game.initialise();
+				game.startGame();
+				$("#game-over").hide();
+			});
+
+			$('#menu_button').on("click",function(){
+				$("#game-over").hide();
+				$("#game-menu").show();
+			});
+
+			$(".difficulty").on("click", function(){
+				game.setDifficulty($(this).text());
+				$(".selected").removeClass("selected");
+				$(this).addClass("selected");
+			});
+
+
+
+		});
+		</script>
+	</head>
+	<body>
+		<div id="game-container">
+
+			<canvas id="snake_canvas" width="500px" height="500px"></canvas>
+
+			<div class="score"><span>score:</span><span id="score">0</span></div>
+
+			<!-- <img id="img3" src="3.png" class="count_img"/>
+			<img id="img2" src="2.png" class="count_img"/>
+			<img id="img1" src="1.png" class="count_img"/> -->
+
+			<div id="count_down_3" class="count_down"><p>3</p></div>
+			<div id="count_down_2" class="count_down"><p>2</p></div>
+			<div id="count_down_1" class="count_down"><p>1</p></div>
+
+			<div id="game-menu" class="game_dialogue">
+				<div class="difficulty">Easy</div>
+				<div class="difficulty selected">Medium</div>
+				<div class="difficulty">Hard</div>
+				<div id="start_game">Play</div>
+
+				<div id="snake_title">Snkae</div>
+			</div>
+			<div id="game-over" class="game_dialogue">
+				<p>Game Over!</p>
+				<p> Score:<span id="final_score"></span></p>
+				<div id="play_again"><span><p>Play Again</p></span></div>
+				<div id="menu_button"><span><p>Menu</p></span></div>
+			</div>
+
+			
+		</div>
+			
+
+
+	</body>
+</html>
