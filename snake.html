@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html>
 	<head>
+		<meta http-equiv="Access-Control-Allow-Origin" content="*">
 		<title>snake</title>
 		<style type="text/css">
 		@font-face {
@@ -22,14 +23,24 @@
 		.difficulty.selected {color:#F00; cursor: pointer;}
 		#snake_canvas{border:5px solid #000000; width:100%;margin:auto;}
 		#game-container{width:600px; height:400px; margin:auto;}
-/*		#play_again{cursor: pointer;}
-		#start_game{cursor: pointer;}
-		#menu_button{cursor: pointer;}*/
 
 		.selectable{cursor: pointer;}
 		.selectable:hover{color:#00f;}
 		.score{ font-family: Vidya; font-size: 20px;}
 		#snake_title{margin-top: 140px; cursor: default;}
+
+		#high_scores{font-size: 20px; width: 350px; margin-top: 50px;}
+
+		#high_scores_title{margin-bottom:30px;}
+
+		.highscore_score{float:right;}
+
+		.highscore{margin:10px;}
+
+		#game-over{font-size: 30px!important; left: 175px;}
+
+		#name_input{border: none;font-family: Vidya;font-size: 30px;}
+		#name_input:focus {outline: none;}
 		</style>
 		<script type="text/javascript" src="jquery-2.0.3.min.js"></script>
 		<script>
@@ -51,6 +62,7 @@
 			var score = 0;
 			var board = _board;
 			var grow_count = 3;
+			var multiplier = board.getMultiplier();
 			var vx = 1;
 			var vy = 0;
 			var body = new Array();
@@ -121,7 +133,7 @@
 				if(body.indexOf(nibble)!=-1){
 					addNibble();
 					grow_count+=2;
-					score++;
+					score+=multiplier;
 					$("#score").text(score);
 				}
 			}
@@ -135,6 +147,7 @@
 		function Board(_width, _height, _canvas)
 		{
 			var timeOutValue = 80;
+			var multiplier = 2;
 			var gameTimer;
 			var width = _width;
 			var height = _height;
@@ -193,6 +206,7 @@
 				ctx.fillRect(0,0,canvas.width, canvas.height);
 				$("#final_score").text(_score);
 				$("#game-over").show();
+				$("#name_input").focus();
 			}
 
 			this.startGame = function(){
@@ -247,15 +261,22 @@
 			this.setDifficulty = function(_difficulty){
 				if(_difficulty.toLowerCase() == "medium"){
 					timeOutValue = 80;
+					multiplier = 2;
 				}
 
 				if(_difficulty.toLowerCase() == "hard"){
 					timeOutValue = 50;
+					multiplier=3;
 				}
 
 				if(_difficulty.toLowerCase() == "easy"){
 					timeOutValue = 100;
+					multiplier=1;
 				}
+			}
+
+			this.getMultiplier=function(){
+				return multiplier;
 			}
 
 
@@ -271,6 +292,9 @@
 
 			$('.count_down').hide();
 			$('#game-over').hide();
+			$('#score_submit').hide();
+
+			score_submit
 			
 			
 			$('#start_game').on("click", function(){
@@ -279,12 +303,12 @@
 				$("#game-menu").hide();
 			});
 
-			$('#play_again').on("click",function(){
-				$("#score").text(0);
-				game.initialise();
-				game.startGame();
+			$('#submit').on("click",function(){
 				$("#game-over").hide();
+				$("#score_submit").show();
+				$("#name_input").focus();
 			});
+
 
 			$('#menu_button').on("click",function(){
 				$("#score").text(0);
@@ -298,9 +322,44 @@
 				$(this).addClass("selected");
 			});
 
+			$("#send_score").on("click", function(){
+				var name = $("#name_input").val();
+				var score = parseInt($("#score").text());
+				$.ajax({
+				  url:"http://satlssnakescore.azure-mobile.net/api/highscores",
+				  type:"POST",
+				  dataType: "json",
+				  headers:{"name":name, "score":score },
+				  complete: function() {
+				    $("#score").text(0);
+					$("#game-over").hide();
+					$("#game-menu").show();
+					$("#score_submit").hide();
+					fillHighscores();
+				  }
+				});
+			});
 
+			//$.support.cors = true;
+
+			fillHighscores();
+			
 
 		});
+
+		function fillHighscores(){
+			$(".highscore").remove();
+			$.ajax({
+			  url:"http://satlssnakescore.azure-mobile.net/api/highscores",  
+			  dataType: "json",
+			  headers:'{Content-type: application/json}',
+			  success: function(data, textStatus, jqXHR) {
+			    for(var i = 0; i < data.message.length; i++){
+			    	$("#high_scores").append('<div class="highscore"><span class="highscore_name">'+data.message[i].name+'</span> <span class="highscore_score">'+data.message[i].score+'</span></div>');
+			    }
+			  }
+			});
+		}
 		</script>
 	</head>
 	<body>
@@ -309,10 +368,6 @@
 			<canvas id="snake_canvas" width="500px" height="500px"></canvas>
 
 			<div class="score"><span>score:</span><span id="score">0</span></div>
-
-			<!-- <img id="img3" src="3.png" class="count_img"/>
-			<img id="img2" src="2.png" class="count_img"/>
-			<img id="img1" src="1.png" class="count_img"/> -->
 
 			<div id="count_down_3" class="count_down"><p>3</p></div>
 			<div id="count_down_2" class="count_down"><p>2</p></div>
@@ -325,13 +380,24 @@
 				<div id="start_game" class="selectable">Play</div>
 
 				<div id="snake_title">Snkae</div>
+
+				<div id="high_scores" >
+					<div id="high_scores_title">High Scores:</div>
+				</div>
 			</div>
 			<div id="game-over" class="game_dialogue">
 				<p>Game Over!</p>
 				<p> Score:<span id="final_score"></span></p>
-				<div id="play_again" class="selectable"><span><p>Play Again</p></span></div>
+				<div id="submit" class="selectable"><span><p>Submit</p></span></div>
 				<div id="menu_button" class="selectable"><span><p>Menu</p></span></div>
 			</div>
+
+			<div id="score_submit" class="game_dialogue">
+				<div style="margin-top:40px;">Name:</div>
+				<input id="name_input" style="margin-top:40px;"></input>
+				<div id="send_score" class="selectable" style="margin-top:250px;">Submit</div>
+			</div>
+
 
 			
 		</div>
