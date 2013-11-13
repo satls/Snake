@@ -355,7 +355,7 @@
 			  headers:'{Content-type: application/json}',
 			  success: function(data, textStatus, jqXHR) {
 			    for(var i = 0; i < data.message.length; i++){
-			    	$("#high_scores").append('<div class="highscore"><span class="highscore_name">'+data.message[i].name.substring(0,10)+'</span> <span class="highscore_score">'+data.message[i].score+'</span></div>');
+			    	$("#high_scores").append('<div class="highscore"><span class="highscore_name">'+data.message[i].name.substring(0,9)+'</span> <span class="highscore_score">'+data.message[i].score+'</span></div>');
 			    }
 			  }
 			});
